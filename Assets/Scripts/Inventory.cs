@@ -9,8 +9,11 @@ public class Inventory : MonoBehaviour
     public List<Item> items = new List<Item>();
     public int selectedIndex = 0; // 0 = manos vacías
 
+    [Header("Item iniciales")]
+    public Item linternaDefault;      // ⭐ Asignar en el inspector
+
     [Header("Referencias")]
-    public Transform handTransform; // Aquí se instancia el objeto en primera persona
+    public Transform handTransform;
     private GameObject currentItemInstance;
 
     private void Awake()
@@ -19,16 +22,28 @@ public class Inventory : MonoBehaviour
         else Destroy(gameObject);
     }
 
+    private void Start()
+    {
+        // ⭐ AGREGAR LA LINTERNA AL INICIAR
+        if (linternaDefault != null)
+        {
+            AddItem(linternaDefault);
+            SelectItem(1); // la linterna será el ítem seleccionado
+        }
+        else
+        {
+            Debug.LogWarning("Inventory: No se asignó una linterna por defecto.");
+        }
+    }
+
     private void Update()
     {
-        // Detección del scroll del mouse
         float scroll = Input.GetAxis("Mouse ScrollWheel");
         if (scroll != 0)
         {
             ScrollInventory(scroll);
         }
 
-        // Usar ítem actual con click izquierdo
         if (Input.GetMouseButtonDown(0))
         {
             UseCurrentItem();
@@ -38,22 +53,16 @@ public class Inventory : MonoBehaviour
     public void AddItem(Item item)
     {
         items.Add(item);
-
         Debug.Log($"Añadido {item.itemName} al inventario.");
 
-        // Si es el primer ítem y estabas en manos vacías, queda en el slot vacío
         if (selectedIndex == 0 && items.Count == 1)
-        {
-            SelectItem(0); // manos vacías
-        }
+            SelectItem(0);
     }
 
     public void SelectItem(int index)
     {
-        // index 0 siempre permitido (manos vacías)
         if (index < 0 || index > items.Count) return;
 
-        // Limpia el objeto anterior en la mano
         if (currentItemInstance != null)
             Destroy(currentItemInstance);
 
@@ -61,26 +70,17 @@ public class Inventory : MonoBehaviour
 
         if (selectedIndex == 0)
         {
-            // Slot vacío → manos vacías
             currentItemInstance = null;
             Debug.Log("Manos vacías");
             return;
         }
 
-        // Instanciamos el ítem correspondiente en la mano
-        Item item = items[selectedIndex - 1]; // -1 porque la lista no incluye slot vacío
-
-        if (item.itemPrefab == null)
-        {
-            Debug.LogWarning($"El item {item.itemName} no tiene prefab asignado.");
-            return;
-        }
+        Item item = items[selectedIndex - 1];
 
         currentItemInstance = Instantiate(item.itemPrefab, handTransform);
         currentItemInstance.transform.localPosition = Vector3.zero;
         currentItemInstance.transform.localRotation = Quaternion.identity;
 
-        // Deshabilitar físicas en la versión "en mano"
         if (currentItemInstance.TryGetComponent<Collider>(out Collider col))
             col.enabled = false;
 
@@ -94,7 +94,6 @@ public class Inventory : MonoBehaviour
     {
         if (items.Count == 0)
         {
-            // Si no hay ítems, solo se muestran manos vacías
             selectedIndex = 0;
             SelectItem(0);
             return;
@@ -103,7 +102,6 @@ public class Inventory : MonoBehaviour
         if (scroll > 0) selectedIndex++;
         else if (scroll < 0) selectedIndex--;
 
-        // Wrap circular
         if (selectedIndex > items.Count) selectedIndex = 0;
         if (selectedIndex < 0) selectedIndex = items.Count;
 
@@ -115,7 +113,7 @@ public class Inventory : MonoBehaviour
         if (selectedIndex == 0)
         {
             Debug.Log("Intentaste usar las manos vacías.");
-            return; // slot vacío
+            return;
         }
 
         items[selectedIndex - 1].Use();
