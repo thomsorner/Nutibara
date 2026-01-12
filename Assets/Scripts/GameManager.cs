@@ -5,11 +5,18 @@ using System.Collections;
 public class SceneLoader : MonoBehaviour
 {
     public static SceneLoader Instance;
-    private string currentFloor = "Lobby"; // escena inicial
+
+    [Header("Scenes")]
+    [SerializeField] private string mainScene = "Main";
+    [SerializeField] private string lobbyScene = "Lobby";
+    [SerializeField] private string corridorScene = "Corredor";
+
+    private string currentFloor;
+
+    // ================= LIFECYCLE =================
 
     private void Awake()
     {
-        // Singleton para acceder desde otros scripts
         if (Instance == null)
         {
             Instance = this;
@@ -21,49 +28,65 @@ public class SceneLoader : MonoBehaviour
         }
     }
 
-    private IEnumerator Start()
+    private void Start()
     {
-        // Cargar piso inicial (Lobby) y elevador
-        yield return LoadSceneAdditive("Lobby");
-        yield return LoadSceneAdditive("Elevator");
+        // Main es solo contenedor, el juego REAL inicia en Lobby
+        StartCoroutine(LoadInitialFloor());
     }
 
-    public IEnumerator LoadSceneAdditive(string sceneName)
+    private IEnumerator LoadInitialFloor()
     {
-        if (!SceneManager.GetSceneByName(sceneName).isLoaded)
+        // Asegurar que Lobby esté cargado
+        if (!SceneManager.GetSceneByName(lobbyScene).isLoaded)
         {
-            AsyncOperation loadOp = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
+            AsyncOperation loadOp = SceneManager.LoadSceneAsync(lobbyScene, LoadSceneMode.Additive);
             while (!loadOp.isDone)
                 yield return null;
         }
+
+        currentFloor = lobbyScene;
+
+        // Opcional: establecer Lobby como escena activa
+        SceneManager.SetActiveScene(SceneManager.GetSceneByName(lobbyScene));
     }
 
-    public IEnumerator UnloadScene(string sceneName)
-    {
-        if (SceneManager.GetSceneByName(sceneName).isLoaded)
-        {
-            AsyncOperation unloadOp = SceneManager.UnloadSceneAsync(sceneName);
-            while (!unloadOp.isDone)
-                yield return null;
-        }
-    }
+    // ================= PUBLIC API =================
 
     public void GoUp()
     {
-        if (currentFloor == "Lobby")
-            StartCoroutine(SwapFloor("Lobby", "Corredor"));
+        if (currentFloor == lobbyScene)
+            StartCoroutine(SwapFloor(lobbyScene, corridorScene));
     }
 
     public void GoDown()
     {
-        if (currentFloor == "Corredor")
-            StartCoroutine(SwapFloor("Corredor", "Lobby"));
+        if (currentFloor == corridorScene)
+            StartCoroutine(SwapFloor(corridorScene, lobbyScene));
     }
+
+    // ================= CORE =================
 
     private IEnumerator SwapFloor(string from, string to)
     {
-        yield return UnloadScene(from);
-        yield return LoadSceneAdditive(to);
+        // Cargar el nuevo piso
+        if (!SceneManager.GetSceneByName(to).isLoaded)
+        {
+            AsyncOperation loadOp = SceneManager.LoadSceneAsync(to, LoadSceneMode.Additive);
+            while (!loadOp.isDone)
+                yield return null;
+        }
+
+        // Activar la nueva escena
+        SceneManager.SetActiveScene(SceneManager.GetSceneByName(to));
+
+        // Descargar la anterior
+        if (SceneManager.GetSceneByName(from).isLoaded)
+        {
+            AsyncOperation unloadOp = SceneManager.UnloadSceneAsync(from);
+            while (!unloadOp.isDone)
+                yield return null;
+        }
+
         currentFloor = to;
     }
 }

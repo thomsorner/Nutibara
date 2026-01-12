@@ -12,9 +12,6 @@ EditorBuildSettings:
     path: Assets/Scenes/Main.unity
     guid: 4d9d3d1038084a342aa4fd40bd71f923
   - enabled: 1
-    path: Assets/Scenes/Elevator.unity
-    guid: 38733d7b41017364eb033ef578c3fc1d
-  - enabled: 1
     path: Assets/Scenes/Lobby.unity
     guid: bddac30cb05a2ab43adc02cbbf4d4e8a
   - enabled: 1

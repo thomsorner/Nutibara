@@ -14,15 +14,17 @@ public class LampSwitch : MonoBehaviour
     private bool playerInside;
     private bool used;
 
-    private void Update()
+    // ================= INTERACTION =================
+
+    /// <summary>
+    /// Llamado por el PlayerController (E o botón móvil)
+    /// </summary>
+    public void Interact()
     {
         if (!playerInside || used)
             return;
 
-        if (Input.GetKeyDown(KeyCode.E))
-        {
-            TryActivateLamp();
-        }
+        TryActivateLamp();
     }
 
     private void TryActivateLamp()
@@ -32,7 +34,7 @@ public class LampSwitch : MonoBehaviour
 
         targetLamp.TurnOn();
 
-        // VALIDACIÓN REAL
+        // Validación real
         if (targetLamp.IsOn)
         {
             used = true;
@@ -43,6 +45,8 @@ public class LampSwitch : MonoBehaviour
             ShowDialog();
         }
     }
+
+    // ================= DIALOG =================
 
     private void ShowDialog()
     {
@@ -61,6 +65,8 @@ public class LampSwitch : MonoBehaviour
         if (dialogText != null)
             dialogText.gameObject.SetActive(false);
     }
+
+    // ================= TRIGGER =================
 
     private void OnTriggerEnter(Collider other)
     {

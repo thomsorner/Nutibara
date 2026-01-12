@@ -127,9 +127,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b391a6990c6d4b04b89980ad932909b0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  pointLight: {fileID: 0}
-  emissiveRenderer: {fileID: 0}
   startOn: 0
+  pointLight: {fileID: 0}
+  emissiveMesh: {fileID: 0}
 --- !u!1 &193158
 GameObject:
   m_ObjectHideFlags: 0
@@ -260,8 +260,8 @@ Light:
   serializedVersion: 11
   m_Type: 2
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 5
-  m_Range: 5.288891
+  m_Intensity: 8
+  m_Range: 8
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
   m_CookieSize: 10
