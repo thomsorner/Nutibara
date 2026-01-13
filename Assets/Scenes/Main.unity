@@ -270,6 +270,14 @@ PrefabInstance:
       propertyPath: mobileLookSensitivity
       value: 80
       objectReference: {fileID: 0}
+    - target: {fileID: 6255771388196049951, guid: fbd89cc999e57d6469737cc805c069b1, type: 3}
+      propertyPath: walkSpeed
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 6255771388196049951, guid: fbd89cc999e57d6469737cc805c069b1, type: 3}
+      propertyPath: sprintMultiplier
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: 6432322960320222100, guid: fbd89cc999e57d6469737cc805c069b1, type: 3}
       propertyPath: m_TagString
       value: Player

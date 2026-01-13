@@ -36,7 +36,7 @@ public class SceneLoader : MonoBehaviour
 
     private IEnumerator LoadInitialFloor()
     {
-        // Asegurar que Lobby esté cargado
+        // Asegurar que Lobby estï¿½ cargado
         if (!SceneManager.GetSceneByName(lobbyScene).isLoaded)
         {
             AsyncOperation loadOp = SceneManager.LoadSceneAsync(lobbyScene, LoadSceneMode.Additive);
@@ -48,6 +48,7 @@ public class SceneLoader : MonoBehaviour
 
         // Opcional: establecer Lobby como escena activa
         SceneManager.SetActiveScene(SceneManager.GetSceneByName(lobbyScene));
+        ShowLobbyMessage();
     }
 
     // ================= PUBLIC API =================
@@ -88,5 +89,33 @@ public class SceneLoader : MonoBehaviour
         }
 
         currentFloor = to;
+        
+        if (to == corridorScene)
+        {
+            StartCoroutine(ShowEndDemoAfterDelay(10f));
+        }
+    }
+    
+    private void ShowLobbyMessage()
+    {
+        SceneMessageUI messageUI = Object.FindFirstObjectByType<SceneMessageUI>();
+
+        if (messageUI)
+        {
+            messageUI.ShowMessage(
+                "Completa la secuencia para desbloquear el ascensor e ir a la habitaciÃ³n 507."
+            );
+        }
+    }
+    
+    private IEnumerator ShowEndDemoAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+
+        var endDemoUI = Object.FindFirstObjectByType<EndDemoUI>();
+        if (endDemoUI)
+        {
+            endDemoUI.ShowEndDemo();
+        }
     }
 }
