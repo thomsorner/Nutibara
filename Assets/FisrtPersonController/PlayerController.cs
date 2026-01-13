@@ -4,12 +4,12 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(CharacterController))]
 public class PlayerController : MonoBehaviour
 {
-    [Header("Input Actions (PC)")]
-    [SerializeField] private InputActionAsset PlayerControls;
+    [Header("Input Actions")]
+    [SerializeField] private InputActionAsset playerControls;
 
-    [Header("Mobile Controls")]
-    [SerializeField] private VirtualJoystick moveJoystick; // Stick izquierdo
-    [SerializeField] private LookJoystick lookJoystick;    // Stick derecho
+    [Header("Mobile Controls (Optional)")]
+    [SerializeField] private VirtualJoystick moveJoystick;
+    [SerializeField] private LookJoystick lookJoystick;
 
     [Header("Movement")]
     [SerializeField] private float walkSpeed = 3f;
@@ -19,24 +19,17 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float jumpForce = 5f;
     [SerializeField] private float gravity = -9.81f;
 
-    [Header("Look Settings")]
-    [SerializeField] private float mouseLookSensitivity = 2f;
-    [SerializeField] private float mobileLookSensitivity = 120f;
+    [Header("Look")]
+    [SerializeField] private float mouseLookSensitivity = 2.5f;
+    [SerializeField] private float mobileLookSensitivity = 180f;
     [SerializeField] private float maxLookAngle = 80f;
-
-    [Header("Footsteps")]
-    [SerializeField] private AudioSource footstepSource;
-    [SerializeField] private AudioClip[] footstepSounds;
-    [SerializeField] private float walkStepInterval = 0.5f;
-    [SerializeField] private float sprintStepInterval = 0.3f;
-    [SerializeField] private float velocityThreshold = 2f;
 
     // Components
     private CharacterController controller;
     private Camera mainCamera;
-    private PlayerAnimator playerAnimator;
 
-    // Input (PC)
+    // Input System
+    private InputActionMap playerMap;
     private InputAction moveAction;
     private InputAction lookAction;
     private InputAction jumpAction;
@@ -48,13 +41,7 @@ public class PlayerController : MonoBehaviour
     private Vector2 lookInput;
     private Vector3 velocity;
     private float verticalRotation;
-    private bool isMoving;
-    private float nextStepTime;
-    private int lastPlayedIndex = -1;
 
-    private bool isMobile;
-
-    // Interaction
     private LampSwitch currentLampSwitch;
 
     // ================= LIFECYCLE =================
@@ -62,50 +49,46 @@ public class PlayerController : MonoBehaviour
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
-        playerAnimator = GetComponentInChildren<PlayerAnimator>();
         mainCamera = Camera.main;
 
-#if UNITY_ANDROID || UNITY_IOS
-        isMobile = true;
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-#else
-        isMobile = false;
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-#endif
+        // Cursor solo depende de si hay mouse
+        if (Mouse.current != null)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
     }
 
     private void OnEnable()
     {
-        if (PlayerControls == null) return;
+        if (playerControls == null)
+        {
+            Debug.LogError("PlayerController: InputActionAsset no asignado.");
+            return;
+        }
 
-        var map = PlayerControls.FindActionMap("Player");
+        playerControls.Enable();
 
-        moveAction = map.FindAction("Move");
-        lookAction = map.FindAction("Look");
-        jumpAction = map.FindAction("Jump");
-        sprintAction = map.FindAction("Sprint");
-        interactAction = map.FindAction("Interact");
+        playerMap = playerControls.FindActionMap("Player", true);
 
-        moveAction.Enable();
-        lookAction.Enable();
-        jumpAction.Enable();
-        sprintAction.Enable();
-        interactAction.Enable();
+        moveAction = playerMap.FindAction("Move", true);
+        lookAction = playerMap.FindAction("Look", true);
+        jumpAction = playerMap.FindAction("Jump", true);
+        sprintAction = playerMap.FindAction("Sprint", true);
+        interactAction = playerMap.FindAction("Interact", true);
 
-        interactAction.performed += _ => Interact();
+        interactAction.performed += OnInteract;
     }
 
     private void OnDisable()
     {
-        interactAction.performed -= _ => Interact();
-
-        moveAction.Disable();
-        lookAction.Disable();
-        jumpAction.Disable();
-        sprintAction.Disable();
-        interactAction.Disable();
+        interactAction.performed -= OnInteract;
+        playerControls.Disable();
     }
 
     private void Update()
@@ -113,26 +96,22 @@ public class PlayerController : MonoBehaviour
         ReadInput();
         HandleMovement();
         HandleLook();
-        HandleFootsteps();
     }
 
     // ================= INPUT =================
 
     private void ReadInput()
     {
-        if (isMobile)
-        {
-            if (moveJoystick != null)
-                moveInput = moveJoystick.Direction;
+        // PRIORIDAD: teclado / gamepad
+        moveInput = moveAction.ReadValue<Vector2>();
+        lookInput = lookAction.ReadValue<Vector2>();
 
-            if (lookJoystick != null)
-                lookInput = lookJoystick.Direction;
-        }
-        else
-        {
-            moveInput = moveAction.ReadValue<Vector2>();
-            lookInput = lookAction.ReadValue<Vector2>();
-        }
+        // FALLBACK: controles táctiles
+        if (moveInput == Vector2.zero && moveJoystick != null)
+            moveInput = moveJoystick.Direction;
+
+        if (lookInput == Vector2.zero && lookJoystick != null)
+            lookInput = lookJoystick.Direction;
     }
 
     // ================= MOVEMENT =================
@@ -140,7 +119,7 @@ public class PlayerController : MonoBehaviour
     private void HandleMovement()
     {
         float sprint =
-            (!isMobile && sprintAction.ReadValue<float>() > 0)
+            sprintAction != null && sprintAction.IsPressed()
             ? sprintMultiplier
             : 1f;
 
@@ -150,9 +129,9 @@ public class PlayerController : MonoBehaviour
 
         if (controller.isGrounded)
         {
-            velocity.y = -1f;
+            velocity.y = -2f;
 
-            if (!isMobile && jumpAction.triggered)
+            if (jumpAction != null && jumpAction.WasPressedThisFrame())
                 velocity.y = jumpForce;
         }
         else
@@ -160,25 +139,27 @@ public class PlayerController : MonoBehaviour
             velocity.y += gravity * Time.deltaTime;
         }
 
-        Vector3 finalMove =
-            move * walkSpeed * sprint +
-            Vector3.up * velocity.y;
-
-        controller.Move(finalMove * Time.deltaTime);
-
-        isMoving = moveInput.magnitude > 0.1f;
-        if (playerAnimator != null)
-            playerAnimator.UpdateMovement(moveInput.magnitude);
+        controller.Move(
+            (move * walkSpeed * sprint + Vector3.up * velocity.y)
+            * Time.deltaTime
+        );
     }
 
     // ================= LOOK =================
 
     private void HandleLook()
     {
-        float sensitivity = isMobile ? mobileLookSensitivity : mouseLookSensitivity;
+        if (lookInput == Vector2.zero)
+            return;
 
-        float yaw = lookInput.x * sensitivity * Time.deltaTime;
-        float pitch = lookInput.y * sensitivity * Time.deltaTime;
+        bool usingMouse = Mouse.current != null && lookAction.activeControl?.device is Mouse;
+
+        float sensitivity = usingMouse
+            ? mouseLookSensitivity
+            : mobileLookSensitivity * Time.deltaTime;
+
+        float yaw = lookInput.x * sensitivity;
+        float pitch = lookInput.y * sensitivity;
 
         transform.Rotate(Vector3.up * yaw);
 
@@ -191,7 +172,7 @@ public class PlayerController : MonoBehaviour
 
     // ================= INTERACTION =================
 
-    public void Interact()
+    private void OnInteract(InputAction.CallbackContext context)
     {
         if (currentLampSwitch != null)
             currentLampSwitch.Interact();
@@ -199,46 +180,13 @@ public class PlayerController : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        LampSwitch lamp = other.GetComponent<LampSwitch>();
-        if (lamp != null)
+        if (other.TryGetComponent(out LampSwitch lamp))
             currentLampSwitch = lamp;
     }
 
     private void OnTriggerExit(Collider other)
     {
-        LampSwitch lamp = other.GetComponent<LampSwitch>();
-        if (lamp != null && lamp == currentLampSwitch)
+        if (other.TryGetComponent(out LampSwitch lamp) && lamp == currentLampSwitch)
             currentLampSwitch = null;
-    }
-
-    // ================= FOOTSTEPS =================
-
-    private void HandleFootsteps()
-    {
-        if (!controller.isGrounded) return;
-        if (!isMoving) return;
-        if (controller.velocity.magnitude < velocityThreshold) return;
-        if (Time.time < nextStepTime) return;
-
-        float interval =
-            (!isMobile && sprintAction.ReadValue<float>() > 0)
-            ? sprintStepInterval
-            : walkStepInterval;
-
-        PlayFootstep();
-        nextStepTime = Time.time + interval;
-    }
-
-    private void PlayFootstep()
-    {
-        if (footstepSource == null || footstepSounds.Length == 0) return;
-
-        int index = Random.Range(0, footstepSounds.Length);
-        if (index == lastPlayedIndex)
-            index = (index + 1) % footstepSounds.Length;
-
-        lastPlayedIndex = index;
-        footstepSource.clip = footstepSounds[index];
-        footstepSource.Play();
     }
 }

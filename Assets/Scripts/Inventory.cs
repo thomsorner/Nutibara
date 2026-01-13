@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class Inventory : MonoBehaviour
 {
@@ -9,26 +10,30 @@ public class Inventory : MonoBehaviour
     public List<Item> items = new List<Item>();
     public int selectedIndex = 0; // 0 = manos vacías
 
-    [Header("Item iniciales")]
-    public Item linternaDefault;      // ⭐ Asignar en el inspector
+    [Header("Item inicial")]
+    public Item linternaDefault;   // Asignar en el inspector
 
     [Header("Referencias")]
     public Transform handTransform;
     private GameObject currentItemInstance;
 
+    // ================= LIFECYCLE =================
+
     private void Awake()
     {
-        if (instance == null) instance = this;
-        else Destroy(gameObject);
+        if (instance == null)
+            instance = this;
+        else
+            Destroy(gameObject);
     }
 
     private void Start()
     {
-        // ⭐ AGREGAR LA LINTERNA AL INICIAR
+        // Agregar linterna por defecto
         if (linternaDefault != null)
         {
             AddItem(linternaDefault);
-            SelectItem(1); // la linterna será el ítem seleccionado
+            SelectItem(1);
         }
         else
         {
@@ -38,17 +43,35 @@ public class Inventory : MonoBehaviour
 
     private void Update()
     {
-        float scroll = Input.GetAxis("Mouse ScrollWheel");
-        if (scroll != 0)
+        HandleScrollInput();
+        HandleUseInput();
+    }
+
+    // ================= INPUT (NEW INPUT SYSTEM) =================
+
+    private void HandleScrollInput()
+    {
+        if (Mouse.current == null) return;
+
+        float scroll = Mouse.current.scroll.ReadValue().y;
+
+        if (Mathf.Abs(scroll) > 0.01f)
         {
             ScrollInventory(scroll);
         }
+    }
 
-        if (Input.GetMouseButtonDown(0))
+    private void HandleUseInput()
+    {
+        if (Mouse.current == null) return;
+
+        if (Mouse.current.leftButton.wasPressedThisFrame)
         {
             UseCurrentItem();
         }
     }
+
+    // ================= INVENTORY LOGIC =================
 
     public void AddItem(Item item)
     {
@@ -56,7 +79,7 @@ public class Inventory : MonoBehaviour
         Debug.Log($"Añadido {item.itemName} al inventario.");
 
         if (selectedIndex == 0 && items.Count == 1)
-            SelectItem(0);
+            SelectItem(1);
     }
 
     public void SelectItem(int index)
@@ -81,10 +104,10 @@ public class Inventory : MonoBehaviour
         currentItemInstance.transform.localPosition = Vector3.zero;
         currentItemInstance.transform.localRotation = Quaternion.identity;
 
-        if (currentItemInstance.TryGetComponent<Collider>(out Collider col))
+        if (currentItemInstance.TryGetComponent(out Collider col))
             col.enabled = false;
 
-        if (currentItemInstance.TryGetComponent<Rigidbody>(out Rigidbody rb))
+        if (currentItemInstance.TryGetComponent(out Rigidbody rb))
             rb.isKinematic = true;
 
         Debug.Log($"Equipado: {item.itemName}");
@@ -94,16 +117,20 @@ public class Inventory : MonoBehaviour
     {
         if (items.Count == 0)
         {
-            selectedIndex = 0;
             SelectItem(0);
             return;
         }
 
-        if (scroll > 0) selectedIndex++;
-        else if (scroll < 0) selectedIndex--;
+        if (scroll > 0)
+            selectedIndex++;
+        else if (scroll < 0)
+            selectedIndex--;
 
-        if (selectedIndex > items.Count) selectedIndex = 0;
-        if (selectedIndex < 0) selectedIndex = items.Count;
+        if (selectedIndex > items.Count)
+            selectedIndex = 0;
+
+        if (selectedIndex < 0)
+            selectedIndex = items.Count;
 
         SelectItem(selectedIndex);
     }

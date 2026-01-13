@@ -184,7 +184,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1174357720950762383, guid: fbd89cc999e57d6469737cc805c069b1, type: 3}
       propertyPath: m_Enabled
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1883724746873137538, guid: fbd89cc999e57d6469737cc805c069b1, type: 3}
       propertyPath: m_LocalPosition.x
@@ -236,7 +236,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5022437057462906025, guid: fbd89cc999e57d6469737cc805c069b1, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5501361252150445438, guid: fbd89cc999e57d6469737cc805c069b1, type: 3}
       propertyPath: m_Enabled
@@ -254,6 +254,10 @@ PrefabInstance:
       propertyPath: moveJoystick
       value: 
       objectReference: {fileID: 1853120115}
+    - target: {fileID: 6233446517277807305, guid: fbd89cc999e57d6469737cc805c069b1, type: 3}
+      propertyPath: playerControls
+      value: 
+      objectReference: {fileID: -944628639613478452, guid: 064ec44663473704c89696468bbb83cb, type: 3}
     - target: {fileID: 6233446517277807305, guid: fbd89cc999e57d6469737cc805c069b1, type: 3}
       propertyPath: virtualJoystick
       value: 
@@ -782,7 +786,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
   m_AnchoredPosition: {x: -171.5, y: 369.4}
-  m_SizeDelta: {x: 200, y: 200}
+  m_SizeDelta: {x: 150, y: 150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1267550230
 MonoBehaviour:
